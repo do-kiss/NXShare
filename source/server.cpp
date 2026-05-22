@@ -430,6 +430,7 @@ std::string Server::guessMime(const std::string& filename) {
     if (lower.size() >= 4) {
         std::string ext = lower.substr(lower.size() - 4);
         if (ext == ".jpg") return "image/jpeg";
+        if (ext == ".png") return "image/png";
         if (ext == ".mp4") return "video/mp4";
     }
     if (lower.size() >= 5) {
