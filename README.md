@@ -27,7 +27,7 @@ NXShare starts a small web server on your Switch. Open the displayed URL in any 
 | | |
 |---|---|
 | **Atmosphère** | tested 1.9.3 and 1.11.1 |
-| **Firmware** | tested 19.3.0 and 22.0.0 |
+| **Firmware** | tested 20.3.0 and 22.0.0 |
 | **Storage** | SysMMC and emuMMC (auto-detected) |
 
 ---
