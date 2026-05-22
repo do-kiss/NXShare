@@ -10,9 +10,10 @@
 
 NXShare starts a small web server on your Switch. Open the displayed URL in any browser on a PC, phone or tablet (same WiFi required), and you get a clean gallery view of all your screenshots and videos - with thumbnails, filters and multi-select download.
 
-- 🎬 Browse all screenshots and videos with thumbnails  
-- ⬇️ Download individual files or select multiple at once
+- 🎬 Browse and view all screenshots and videos
 - 🔍 Filter by screenshots/videos or by game
+- ⬇️ Download individual files or select multiple at once
+
 
 
 ## Screenshots
