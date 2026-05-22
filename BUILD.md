@@ -2,8 +2,7 @@
 
 ## Requirements
 
-1. **devkitPro** (free, official Nintendo Switch homebrew SDK)
-2. **~10 minutes** for installation
+**devkitPro** (free, official Nintendo Switch homebrew SDK)
 
 ---
 
@@ -45,11 +44,10 @@ Press `Y` and Enter when prompted.
 
 ## Step 4: Build the project
 
-Navigate to the project folder in the MSYS2 terminal
+Navigate to the project folder in the MSYS2 terminal:
 
 ```bash
 
-# Build
 make all
 ```
 
@@ -62,20 +60,19 @@ Built: NXShare.nro
 
 ## Step 5: Copy the app to your Switch
 
-1. Insert your SD card into your PC (or use FTP via the ftpd sysmodule)
-2. Copy `NXShare.nro` to the `switch/` folder on your SD card:
+
+Copy `NXShare.nro` to the `switch/` folder on your SD card:
    ```
    SD:/switch/NXShare.nro
    ```
-3. Safely eject the SD card and insert it into the Switch
 
 ---
 
 ## Step 6: Launch the app
 
-1. Boot your Switch with **Atmosphère** as usual
-2. Open the **Homebrew Launcher** (hold the Album button or use Title Override)
-3. Launch **NXShare**
+1. Boot with **Atmosphère**
+2. Open the **Homebrew Launcher** (in Applet Mode)
+3. Launch **NXShare** 
 4. The screen will show an IP address, e.g. `http://192.168.1.42:8080`
 5. Open that URL in a browser on your phone or PC — done! 🎉
 
@@ -95,20 +92,17 @@ Built: NXShare.nro
 
 ## Compatibility
 
-- ✅ Atmosphère 1.11.1 and above
-- ✅ Firmware 19.x – 22.x (tested on 22.0.0)
+- ✅ Atmosphère tested 1.9.3 - 1.11.1
 - ✅ SysMMC and emuMMC (album path is detected automatically)
-- ✅ JPG screenshots and MP4 videos
+- ✅ JPG and PNG screenshots, MP4 videos
 - ✅ All modern browsers (Chrome, Firefox, Safari, Edge)
 
 ---
 
 ## Web app features
 
-- 📷 Preview all screenshots directly in the browser
-- 🎬 Play videos directly in the browser
+- 📷 View and download all files from the Album in the browser
 - ⬇️ Download individual files with one click
 - ✅ Select and download multiple files at once
-- 🔍 Filter by screenshots or videos
-- ⟳ Refresh the gallery in the browser
-- 📱 Works on mobile browsers too
+- 🔍 Filter by screenshots/videos or games
+
