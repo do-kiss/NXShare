@@ -46,5 +46,6 @@ private:
     void scanStorage(CapsAlbumStorage storage);
     void parseFilename(MediaFile& file) const;
     void resolveGameNames();
+    void scanPngDirectory(const char* dirPath);
     static std::string jsonEscape(const std::string& s);
 };
