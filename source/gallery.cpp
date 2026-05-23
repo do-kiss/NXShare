@@ -13,36 +13,43 @@
 Gallery::Gallery() {}
 Gallery::~Gallery() {}
 
-// Scan a directory for PNG files saved by homebrew
+// Recursively scan a directory tree for PNG files
 void Gallery::scanPngDirectory(const char* dirPath) {
     DIR* d = opendir(dirPath);
     if (!d) return;
 
     struct dirent* ent;
     while ((ent = readdir(d)) != nullptr) {
+        if (ent->d_name[0] == '.') continue; // skip . and ..
+
+        std::string fullPath = std::string(dirPath) + "/" + ent->d_name;
+
+        if (ent->d_type == DT_DIR) {
+            // Recurse into subdirectory
+            scanPngDirectory(fullPath.c_str());
+            continue;
+        }
+
         if (ent->d_type != DT_REG) continue;
 
         std::string name = ent->d_name;
-        // Only .png files
         if (name.size() < 4) continue;
         std::string ext = name.substr(name.size() - 4);
         std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
         if (ext != ".png") continue;
 
         MediaFile f;
-        f.filename  = name;
-        f.fullPath  = std::string(dirPath) + "/" + name;
-        f.type      = MEDIA_SCREENSHOT;
-        f.gameName  = "Misc";
-        f.gameId    = "png";
+        f.filename = name;
+        f.fullPath = fullPath;
+        f.type     = MEDIA_SCREENSHOT;
+        f.gameName = "Misc";
+        f.gameId   = "png";
 
-        // Get file size
         struct stat st;
         if (stat(f.fullPath.c_str(), &st) == 0)
             f.filesize = st.st_size;
 
-        // Parse date/time from filename if possible (format: YYYY-MM-DD_HH-MM-SS*)
-        // Otherwise use file modification time
+        // Parse date/time from filename (YYYY-MM-DD_HH-MM-SS*)
         if (name.size() >= 19 &&
             name[4] == '-' && name[7] == '-' && name[10] == '_') {
             f.date = name.substr(0, 10);
@@ -50,7 +57,6 @@ void Gallery::scanPngDirectory(const char* dirPath) {
             std::replace(t.begin(), t.end(), '-', ':');
             f.time = t;
         } else {
-            // Use file mtime
             struct tm* tm_info = localtime(&st.st_mtime);
             char buf[11], tbuf[9];
             strftime(buf,  sizeof(buf),  "%Y-%m-%d", tm_info);
