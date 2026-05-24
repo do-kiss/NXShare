@@ -23,8 +23,6 @@ struct MediaFile {
 
 class Gallery {
 public:
-    Gallery();
-    ~Gallery();
 
     void scan();
     int getCount() const;
