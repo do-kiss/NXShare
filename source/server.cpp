@@ -280,6 +280,17 @@ void Server::handleMedia(int sock, const ClientRequest& req) {
 }
 
 
+static std::string getMimeType(const std::string& path) {
+    size_t dot = path.rfind('.');
+    if (dot != std::string::npos) {
+        std::string ext = path.substr(dot);
+        if (ext == ".jpg" || ext == ".jpeg") return "image/jpeg";
+        if (ext == ".png")  return "image/png";
+        if (ext == ".mp4")  return "video/mp4";
+    }
+    return "application/octet-stream";
+}
+
 void Server::handleThumb(int sock, const ClientRequest& req) {
     std::string filename = req.path.substr(7);
     filename = urlDecode(filename);
@@ -336,7 +347,7 @@ void Server::handleThumb(int sock, const ClientRequest& req) {
         send(sock, (const char*)placeholder, sizeof(placeholder), 0);
         return;
     }
-    sendFile(sock, file->fullPath, "image/jpeg");
+    sendFile(sock, file->fullPath, getMimeType(file->fullPath));
 }
 
 void Server::sendResponse(int sock, int code, const std::string& contentType,

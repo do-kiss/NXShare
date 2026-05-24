@@ -10,8 +10,6 @@
 #include <map>
 #include <set>
 
-Gallery::Gallery() {}
-Gallery::~Gallery() {}
 
 // Recursively scan a directory tree for PNG files
 void Gallery::scanPngDirectory(const char* dirPath) {
