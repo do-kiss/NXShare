@@ -241,7 +241,7 @@ void Server::handleAPI(int sock, const ClientRequest& req) {
         if (!limitStr.empty())  limit  = atoi(limitStr.c_str());
         
         std::string json = m_gallery->toJSON(offset, limit, filter, game);
-        sendResponse(sock, 200, "application/json", json);
+        sendResponse(sock, 200, "application/json; charset=utf-8", json);
         return;
     }
     
@@ -250,7 +250,7 @@ void Server::handleAPI(int sock, const ClientRequest& req) {
         m_gallery->scan();
         std::ostringstream json;
         json << "{\"count\":" << m_gallery->getCount() << "}";
-        sendResponse(sock, 200, "application/json", json.str());
+        sendResponse(sock, 200, "application/json; charset=utf-8", json.str());
         return;
     }
     
