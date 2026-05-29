@@ -252,10 +252,29 @@ void Gallery::resolveGameNames() {
         Result r = nsGetApplicationControlData(NsApplicationControlSource_Storage, appId, ctrlData, sizeof(NsApplicationControlData), &actualSize);
 
         if (R_SUCCEEDED(r) && actualSize > 0) {
-            // NACP title is at offset 0, up to 512 bytes per language entry
-            // First entry (American English) name is at offset 0, 512 bytes, null-terminated
+            // NACP title is up to 512 bytes per language entry, null-terminated
+            // see also: https://switchbrew.org/wiki/NACP#ApplicationTitle
             char name[513] = {};
-            memcpy(name, ctrlData->nacp.lang[0].name, 512);
+            NacpLanguageEntry* langentry = {};
+            // nacpGetLanguageEntry defaults to system language if available, or falls back
+            r = nacpGetLanguageEntry(&(ctrlData->nacp), &langentry);
+            if (R_SUCCEEDED(r) && langentry != 0 && langentry->name[0] != '\x00') {
+                memcpy(name, langentry->name, 512);
+            } else {
+                // try fallback to this?
+                r = nsGetApplicationDesiredLanguage(&(ctrlData->nacp), &langentry);
+                if (R_SUCCEEDED(r) && langentry != 0 && langentry->name[0] != '\x00') {
+                    memcpy(name, langentry->name, 512);
+                } else {
+                    // fallback, in order: en, en-gb, ja, fr, de, es, es-latam, it, nl, fr-ca, pt, ru, kr, zh, zh-hans, pt-br ...
+                    for (int n = 0; n < 16; n++) {
+                        if (ctrlData->nacp.lang[n].name[0] != '\x00') {
+                            memcpy(name, ctrlData->nacp.lang[n].name, 512);
+                            break;
+                        }
+                    }
+                }
+            }
             name[512] = '\0';
 
             // Trim null bytes and whitespace
