@@ -15,6 +15,7 @@
 // Embedded web frontend - include directly so no linker symbol needed
 #include "html_data.cpp"  // lives in include/
 #include "thumb.hpp"
+#include "png_placeholder.hpp"
 
 Server::Server(int port, Gallery* gallery, const char* ipStr)
     : m_port(port), m_socket(-1), m_gallery(gallery),
@@ -298,6 +299,34 @@ void Server::handleThumb(int sock, const ClientRequest& req) {
 
     const MediaFile* file = m_gallery->findByFilename(filename);
     if (!file) { sendNotFound(sock); return; }
+
+    // PNG files have no capsa entry — serve the actual PNG file as thumbnail
+    // The browser scales it down via CSS; lazy loading keeps performance acceptable
+    {
+        const std::string& fp = file->fullPath;
+        std::string ext4 = fp.size() > 4 ? fp.substr(fp.size()-4) : "";
+        std::transform(ext4.begin(), ext4.end(), ext4.begin(), ::tolower);
+        if (file->gameId == "png" || ext4 == ".png") {
+            FILE* f = fopen(fp.c_str(), "rb");
+            if (f) {
+                fseek(f, 0, SEEK_END);
+                long sz = ftell(f);
+                fseek(f, 0, SEEK_SET);
+                char hdr[256];
+                int hdrLen = snprintf(hdr, sizeof(hdr),
+                    "HTTP/1.1 200 OK\r\nContent-Type: image/png\r\n"
+                    "Content-Length: %ld\r\nAccess-Control-Allow-Origin: *\r\n"
+                    "Connection: close\r\n\r\n", sz);
+                send(sock, hdr, hdrLen, 0);
+                char buf[4096];
+                size_t n;
+                while ((n = fread(buf, 1, sizeof(buf), f)) > 0)
+                    send(sock, buf, n, 0);
+                fclose(f);
+            }
+            return;
+        }
+    }
 
     // Use capsaLoadAlbumFileThumbnail - works for both screenshots AND videos
     std::vector<uint8_t> thumb;

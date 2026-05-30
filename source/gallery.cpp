@@ -303,8 +303,15 @@ const std::vector<MediaFile>& Gallery::getFiles() const { return m_files; }
 
 
 const MediaFile* Gallery::findByFilename(const std::string& filename) const {
+    // First try exact filename match
     for (const auto& f : m_files)
         if (f.filename == filename) return &f;
+    // Fallback: match by basename of fullPath (for PNG files in subdirs)
+    for (const auto& f : m_files) {
+        size_t slash = f.fullPath.rfind('/');
+        std::string base = (slash != std::string::npos) ? f.fullPath.substr(slash+1) : f.fullPath;
+        if (base == filename) return &f;
+    }
     return nullptr;
 }
 
@@ -393,11 +400,24 @@ bool Gallery::serveFileToSocket(const std::string& filename, int sock, long rang
                 fseek(fp, 0, SEEK_END);
                 long fileSize = ftell(fp);
                 fseek(fp, 0, SEEK_SET);
-                char hdr[256];
+                const char* mime = "image/jpeg";
+                {
+                    const std::string& fp3 = f->fullPath;
+                    if (fp3.size() > 4) {
+                        std::string ext = fp3.substr(fp3.size() - 4);
+                        if (ext == ".png") mime = "image/png";
+                        else if (ext == ".mp4") mime = "video/mp4";
+                    }
+                }
+                size_t sl = f->fullPath.rfind('/');
+                std::string fname = (sl != std::string::npos) ? f->fullPath.substr(sl+1) : f->fullPath;
+                char hdr[512];
                 int hdrLen = snprintf(hdr, sizeof(hdr),
-                    "HTTP/1.1 200 OK\r\nContent-Type: image/jpeg\r\n"
+                    "HTTP/1.1 200 OK\r\nContent-Type: %s\r\n"
+                    "Content-Disposition: attachment; filename=\"%s\"\r\n"
                     "Content-Length: %ld\r\nAccept-Ranges: bytes\r\n"
-                    "Access-Control-Allow-Origin: *\r\nConnection: close\r\n\r\n", fileSize);
+                    "Access-Control-Allow-Origin: *\r\nConnection: close\r\n\r\n",
+                    mime, fname.c_str(), fileSize);
                 send(sock, hdr, hdrLen, 0);
                 char chunk[32768];
                 size_t rd;
