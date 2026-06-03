@@ -8,6 +8,7 @@
 #include "server.hpp"
 #include "gallery.hpp"
 #include "ui.hpp"
+#include "locale.hpp"
 
 #define PORT 8080
 
@@ -20,7 +21,11 @@ int main(int argc, char* argv[]) {
     socketInitializeDefault();
     nifmInitialize(NifmServiceType_User);
 
-    printf("NXShare - Starting up...\n");
+    // Detect system language for Chinese localization
+    detectSystemLanguage();
+
+    printf(tr("NXShare - Starting up...\n",
+              "NX快传 - 启动中...\n"));
 
     // Wait for network
     NifmInternetConnectionStatus status;
@@ -30,13 +35,15 @@ int main(int argc, char* argv[]) {
     while (retries < 30) {
         nifmGetInternetConnectionStatus(&type, &strength, &status);
         if (status == NifmInternetConnectionStatus_Connected) break;
-        printf("Waiting for network... (%d/30)\n", retries + 1);
+        printf(tr("Waiting for network... (%d/30)\n",
+                  "等待网络连接... (%d/30)\n"), retries + 1);
             svcSleepThread(1000000000ULL);
         retries++;
     }
 
     if (retries >= 30) {
-        printf("ERROR: No network connection!\nMake sure WiFi is connected.\n\nPress + to exit.\n");
+        printf(tr("ERROR: No network connection!\nMake sure WiFi is connected.\n\nPress + to exit.\n",
+                  "错误：无网络连接！\n请确保 WiFi 已连接。\n\n按 + 退出。\n"));
             while (appletMainLoop()) {
             padUpdate(&pad);
             if (padGetButtonsDown(&pad) & HidNpadButton_Plus) break;

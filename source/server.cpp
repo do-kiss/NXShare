@@ -1,5 +1,6 @@
 #include "server.hpp"
 #include "gallery.hpp"
+#include "locale.hpp"
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -460,7 +461,7 @@ void Server::sendFile(int sock, const std::string& filepath,
 }
 
 void Server::sendNotFound(int sock) {
-    sendResponse(sock, 404, "text/plain", "404 Not Found");
+    sendResponse(sock, 404, "text/plain", tr("404 Not Found", "404 未找到"));
 }
 
 std::string Server::guessMime(const std::string& filename) {

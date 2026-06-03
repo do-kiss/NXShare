@@ -1,4 +1,5 @@
 #include "gallery.hpp"
+#include "locale.hpp"
 #include <dirent.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
@@ -40,7 +41,7 @@ void Gallery::scanPngDirectory(const char* dirPath) {
         f.filename = name;
         f.fullPath = fullPath;
         f.type     = MEDIA_SCREENSHOT;
-        f.gameName = "Misc";
+        f.gameName = tr("Misc", "杂项");
         f.gameId   = "png";
 
         struct stat st;
@@ -175,8 +176,8 @@ void Gallery::parseFilename(MediaFile& file) const {
         file.date = fn.substr(0,4) + "-" + fn.substr(4,2) + "-" + fn.substr(6,2);
         file.time = fn.substr(8,2) + ":" + fn.substr(10,2) + ":" + fn.substr(12,2);
     } else {
-        file.date = "Unknown";
-        file.time = "Unknown";
+        file.date = tr("Unknown", "未知");
+        file.time = tr("Unknown", "未知");
     }
     size_t dash = fn.find('-');
     size_t dot  = fn.rfind('.');
@@ -231,12 +232,12 @@ void Gallery::resolveGameNames() {
 
         // Known system app IDs
         static const std::map<u64, std::string> SYSTEM_NAMES = {
-            {0x0100000000001000ULL, "Home Screen"},
-            {0x0100000000001005ULL, "Errors"},
-            {0x0100000000001009ULL, "Mii Editor"},
-            {0x000000000000100DULL, "Homebrew"},
-            {0x010000000000100DULL, "Homebrew"},
-            {0x0100000000001013ULL, "User Settings"},
+            {0x0100000000001000ULL, tr("Home Screen", "主屏幕")},
+            {0x0100000000001005ULL, tr("Errors", "错误记录")},
+            {0x0100000000001009ULL, tr("Mii Editor", "Mii 编辑器")},
+            {0x000000000000100DULL, tr("Homebrew", "自制程序")},
+            {0x010000000000100DULL, tr("Homebrew", "自制程序")},
+            {0x0100000000001013ULL, tr("User Settings", "用户设置")},
         };
         if (SYSTEM_NAMES.count(appId)) {
             f.gameName = SYSTEM_NAMES.at(appId);
@@ -298,7 +299,7 @@ void Gallery::resolveGameNames() {
     // Any file still without a name gets grouped as "Misc"
     for (auto& f : m_files) {
         if (f.gameName.empty()) {
-            f.gameName = "Misc";
+            f.gameName = tr("Misc", "杂项");
             nameCache[f.gameId] = "Misc";
         }
     }

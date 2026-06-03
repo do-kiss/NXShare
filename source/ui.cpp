@@ -1,7 +1,9 @@
 #include "ui.hpp"
 #include "qrcode.hpp"
 #include "font8x8.hpp"
+#include "font16x16_zh.hpp"
 #include "icon_data.hpp"
+#include "locale.hpp"
 #include <string.h>
 #include <stdio.h>
 #include <string>
@@ -32,28 +34,117 @@ void UI::drawRect(int x, int y, int w, int h, u32 color) {
             setPixel(x + dx, y + dy, color);
 }
 
-// Draw text — font is drawn left-to-right but setPixel flips x internally
+// Decode a single UTF-8 codepoint from string at offset, advance i accordingly
+// Returns the Unicode codepoint, or 0 on failure
+static uint32_t decodeUTF8(const std::string& text, size_t& i) {
+    unsigned char c = static_cast<unsigned char>(text[i]);
+
+    // ASCII (1 byte)
+    if (c < 0x80) {
+        i++;
+        return c;
+    }
+
+    // 2-byte sequence (U+0080 to U+07FF)
+    if ((c & 0xE0) == 0xC0 && i + 1 < text.size()) {
+        unsigned char b1 = static_cast<unsigned char>(text[i + 1]);
+        if ((b1 & 0xC0) == 0x80) {
+            uint32_t cp = ((c & 0x1F) << 6) | (b1 & 0x3F);
+            i += 2;
+            return cp;
+        }
+    }
+
+    // 3-byte sequence (U+0800 to U+FFFF) — CJK range
+    if ((c & 0xF0) == 0xE0 && i + 2 < text.size()) {
+        unsigned char b1 = static_cast<unsigned char>(text[i + 1]);
+        unsigned char b2 = static_cast<unsigned char>(text[i + 2]);
+        if ((b1 & 0xC0) == 0x80 && (b2 & 0xC0) == 0x80) {
+            uint32_t cp = ((c & 0x0F) << 12) | ((b1 & 0x3F) << 6) | (b2 & 0x3F);
+            i += 3;
+            return cp;
+        }
+    }
+
+    // Unknown sequence: skip byte
+    i++;
+    return 0;
+}
+
+// Draw text — supports ASCII (8x8 font) and Chinese (16x16 font) mixed in the same string
+// Chinese 16x16 glyphs are rendered so their visual height matches ASCII at the given scale
+// (i.e. Chinese at scale=2 ≈ ASCII at scale=2, both ~16px tall on screen)
 void UI::drawText(const std::string& text, int x, int y, u32 color, int scale) {
     int cx = x;
-    for (char c : text) {
-        if (c < 32 || c > 126) { cx += (8*scale + scale); continue; }
-        const uint8_t* glyph = FONT8x8[(int)(c - 32)];
-        for (int row = 0; row < 8; row++) {
-            for (int col = 0; col < 8; col++) {
-                if (glyph[row] & (1 << col)) {
-                    for (int sy = 0; sy < scale; sy++)
-                        for (int sx = 0; sx < scale; sx++)
-                            setPixel(cx + col*scale + sx, y + row*scale + sy, color);
+    for (size_t i = 0; i < text.size(); ) {
+        size_t prev = i;
+        uint32_t cp = decodeUTF8(text, i);
+        int byteLen = (int)(i - prev);
+
+        if (byteLen == 1 && cp >= 32 && cp <= 126) {
+            // ── ASCII character: render from FONT8x8 ──────────────────
+            const uint8_t* glyph = FONT8x8[(int)(cp - 32)];
+            for (int row = 0; row < 8; row++) {
+                for (int col = 0; col < 8; col++) {
+                    if (glyph[row] & (1 << col)) {
+                        for (int sy = 0; sy < scale; sy++)
+                            for (int sx = 0; sx < scale; sx++)
+                                setPixel(cx + col*scale + sx, y + row*scale + sy, color);
+                    }
                 }
             }
+            cx += 8 * scale + scale;  // e.g. 9 at scale=1, 18 at scale=2
+        } else if (byteLen == 3 && cp >= 0x2000) {
+            // ── CJK / Chinese character: render from FONT16X16 ────────
+            auto it = FONT16X16_MAP.find(cp);
+            if (it != FONT16X16_MAP.end()) {
+                const uint8_t* glyph = FONT16X16_DATA[it->second];
+                // CJK font is already 16x16 — render each pixel at (scale/2) so
+                // visual height ≈ ASCII at the same scale
+                int cjkScale = (scale > 1) ? scale / 2 : 1;
+                if (cjkScale < 1) cjkScale = 1;
+                for (int row = 0; row < 16; row++) {
+                    for (int col = 0; col < 16; col++) {
+                        int byteIdx = row * 2 + (col / 8);
+                        int bitIdx = 7 - (col % 8);
+                        if (glyph[byteIdx] & (1 << bitIdx)) {
+                            for (int sy = 0; sy < cjkScale; sy++)
+                                for (int sx = 0; sx < cjkScale; sx++)
+                                    setPixel(cx + col*cjkScale + sx, y + row*cjkScale + sy, color);
+                        }
+                    }
+                }
+                cx += 16 * cjkScale + scale;  // spacing matches ASCII
+            } else {
+                // CJK char not in our font: skip with width
+                cx += 16 * ((scale > 1) ? scale / 2 : 1) + scale;
+            }
+        } else {
+            // Unsupported / non-printable: skip
+            cx += 8 * scale + scale;
         }
-        cx += 8*scale + scale;
     }
 }
 
-// Text width in pixels
+// Text width in pixels — accounts for mixed ASCII / CJK
 int UI::textWidth(const std::string& text, int scale) {
-    return (int)text.size() * (8*scale + scale);
+    int w = 0;
+    for (size_t i = 0; i < text.size(); ) {
+        size_t prev = i;
+        uint32_t cp = decodeUTF8(text, i);
+        int byteLen = (int)(i - prev);
+
+        if (byteLen == 1 && cp >= 32 && cp <= 126) {
+            w += 8 * scale + scale;
+        } else if (byteLen >= 2) {
+            int cjkScale = (scale > 1) ? scale / 2 : 1;
+            if (cjkScale < 1) cjkScale = 1;
+            w += 16 * cjkScale + scale;
+        } else {
+            w += 8 * scale + scale;
+        }
+    }
+    return w;
 }
 
 void UI::drawTextCentered(const std::string& text, int y, u32 color, int scale) {
@@ -114,7 +205,8 @@ void UI::drawInfo(const std::string& ip, int port, int mediaCount) {
     int contentY = hdrH + 30;
 
     // "Open the URL in your browser"
-    drawTextCentered("Open the URL in your browser", contentY, COL_MUTED, 2);
+    drawTextCentered(tr("Open the URL in your browser",
+                         "在浏览器中打开以下网址"), contentY, COL_MUTED, 2);
 
     // URL
     drawTextCentered(url, contentY + 32, COL_ACCENT, 2);
@@ -124,7 +216,8 @@ void UI::drawInfo(const std::string& ip, int port, int mediaCount) {
     drawRect((FB_WIDTH - divW) / 2, contentY + 62, divW, 1, COL_BORDER);
 
     // "or scan the QR code"
-    drawTextCentered("or scan the QR code", contentY + 74, COL_MUTED, 2);
+    drawTextCentered(tr("or scan the QR code",
+                         "或扫描二维码"), contentY + 74, COL_MUTED, 2);
 
     // QR code centered
     int qrY = contentY + 106;
@@ -137,7 +230,8 @@ void UI::drawInfo(const std::string& ip, int port, int mediaCount) {
     int blockH = 87;
     int blockTop = qrBottom + (footerTop - qrBottom - blockH) / 2;
     drawRect((FB_WIDTH - divW) / 2, blockTop, divW, 1, COL_BORDER);
-    drawTextCentered("Media files found", blockTop + 14, COL_MUTED, 2);
+    drawTextCentered(tr("Media files found",
+                         "已找到媒体文件"), blockTop + 14, COL_MUTED, 2);
     drawTextCentered(countStr, blockTop + 40, COL_TEXT, 5);
 
     // ── Bottom bar ────────────────────────────────────────────────────────
@@ -145,8 +239,10 @@ void UI::drawInfo(const std::string& ip, int port, int mediaCount) {
     drawRect(0, barY, FB_WIDTH, 1, COL_BORDER);
     drawRect(0, barY + 1, FB_WIDTH, FB_HEIGHT - barY - 1, COL_SURFACE);
 
-    drawTextCentered("Press  [+]  to exit", barY + 8, COL_MUTED, 2);
-    drawTextCentered("NXShare v1.7.3  ---  by musebrot <3", barY + 30, COL_DIM, 2);
+    drawTextCentered(tr("Press  [+]  to exit",
+                         "按 [+] 退出"), barY + 8, COL_MUTED, 2);
+    drawTextCentered(tr("NXShare v1.7.3  ---  by musebrot <3",
+                         "NX快传 v1.7.3  ---  作者 musebrot \xE2\x99\xA5  忘忧汉化"), barY + 30, COL_DIM, 2);
 
     present();
 }

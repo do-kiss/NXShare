@@ -3,7 +3,7 @@
 # Makefile for devkitPro / libnx
 #---------------------------------------------------------------------------------
 
-APP_TITLE   := NXShare
+APP_TITLE   := NX快传
 APP_AUTHOR  := musebrot
 APP_VERSION := 1.7.4
 
