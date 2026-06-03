@@ -16,6 +16,7 @@ struct MediaFile {
     std::string time;
     std::string gameId;
     std::string gameName;   // Resolved from NS application control data
+    s64 sortTimestamp;      // UTC epoch seconds used for cross-format ordering
     MediaType type;
     size_t filesize;
     CapsAlbumEntry capsEntry;
