@@ -10,7 +10,50 @@
 #include <sstream>
 #include <map>
 #include <set>
+#include <time.h>
 
+static s64 utcTimestampFromParts(int year, int month, int day, int hour, int minute, int second) {
+    year -= month <= 2;
+    const int era = (year >= 0 ? year : year - 399) / 400;
+    const unsigned yoe = (unsigned)(year - era * 400);
+    const unsigned doy = (153 * (month + (month > 2 ? -3 : 9)) + 2) / 5 + day - 1;
+    const unsigned doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    const s64 days = (s64)era * 146097 + (s64)doe - 719468;
+    return days * 86400 + hour * 3600 + minute * 60 + second;
+}
+
+static s64 localTimestampFromAlbumDateTime(const CapsAlbumFileDateTime& dt) {
+    struct tm tm_info = {};
+    tm_info.tm_year = (int)dt.year - 1900;
+    tm_info.tm_mon  = (int)dt.month - 1;
+    tm_info.tm_mday = (int)dt.day;
+    tm_info.tm_hour = (int)dt.hour;
+    tm_info.tm_min  = (int)dt.minute;
+    tm_info.tm_sec  = (int)dt.second;
+    tm_info.tm_isdst = -1;
+
+    time_t ts = mktime(&tm_info);
+    if (ts != (time_t)-1) return (s64)ts;
+
+    return utcTimestampFromParts(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second);
+}
+
+static bool parsePngUtcTimestamp(const std::string& name, s64& outTimestamp) {
+    if (name.size() < 19 || name[4] != '-' || name[7] != '-' || name[10] != '_')
+        return false;
+
+    int year, month, day, hour, minute, second;
+    if (sscanf(name.c_str(), "%4d-%2d-%2d_%2d-%2d-%2d",
+               &year, &month, &day, &hour, &minute, &second) != 6)
+        return false;
+
+    if (month < 1 || month > 12 || day < 1 || day > 31 ||
+        hour < 0 || hour > 23 || minute < 0 || minute > 59 || second < 0 || second > 60)
+        return false;
+
+    outTimestamp = utcTimestampFromParts(year, month, day, hour, minute, second);
+    return true;
+}
 
 // Recursively scan a directory tree for PNG files
 void Gallery::scanPngDirectory(const char* dirPath) {
@@ -43,25 +86,37 @@ void Gallery::scanPngDirectory(const char* dirPath) {
         f.type     = MEDIA_SCREENSHOT;
         f.gameName = tr("Misc", "杂项");
         f.gameId   = "png";
+        f.filesize = 0;
+        f.sortTimestamp = 0;
 
-        struct stat st;
-        if (stat(f.fullPath.c_str(), &st) == 0)
+        struct stat st = {};
+        bool hasStat = stat(f.fullPath.c_str(), &st) == 0;
+        if (hasStat) {
             f.filesize = st.st_size;
+            f.sortTimestamp = (s64)st.st_mtime;
+        }
 
         // Parse date/time from filename (YYYY-MM-DD_HH-MM-SS*)
+        // PNG timestamps are UTC; keep display fields as encoded, but sort by epoch.
         if (name.size() >= 19 &&
             name[4] == '-' && name[7] == '-' && name[10] == '_') {
             f.date = name.substr(0, 10);
             std::string t = name.substr(11, 8);
             std::replace(t.begin(), t.end(), '-', ':');
             f.time = t;
-        } else {
+            parsePngUtcTimestamp(name, f.sortTimestamp);
+        } else if (hasStat) {
+            // Filesystem mtimes are epoch-based, and localtime is only for display.
+            f.sortTimestamp = (s64)st.st_mtime;
             struct tm* tm_info = localtime(&st.st_mtime);
             char buf[11], tbuf[9];
             strftime(buf,  sizeof(buf),  "%Y-%m-%d", tm_info);
             strftime(tbuf, sizeof(tbuf), "%H:%M:%S", tm_info);
             f.date = buf;
             f.time = tbuf;
+        } else {
+            f.date = "Unknown";
+            f.time = "Unknown";
         }
 
         m_files.push_back(f);
@@ -96,6 +151,8 @@ void Gallery::scan() {
 
     // Sort newest first
     std::sort(m_files.begin(), m_files.end(), [](const MediaFile& a, const MediaFile& b) {
+        if (a.sortTimestamp != b.sortTimestamp)
+            return a.sortTimestamp > b.sortTimestamp;
         return a.filename > b.filename;
     });
 }
@@ -165,6 +222,7 @@ void Gallery::scanStorage(CapsAlbumStorage storage) {
         file.type      = type;
         file.filesize  = e.size;
         file.capsEntry = e;
+        file.sortTimestamp = localTimestampFromAlbumDateTime(e.file_id.datetime);
         parseFilename(file);
         m_files.push_back(file);
     }

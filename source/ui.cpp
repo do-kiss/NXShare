@@ -241,8 +241,8 @@ void UI::drawInfo(const std::string& ip, int port, int mediaCount) {
 
     drawTextCentered(tr("Press  [+]  to exit",
                          "按 [+] 退出"), barY + 8, COL_MUTED, 2);
-    drawTextCentered(tr("NXShare v1.7.3  ---  by musebrot <3",
-                         "NX快传 v1.7.3  ---  作者 musebrot \xE2\x99\xA5  忘忧汉化"), barY + 30, COL_DIM, 2);
+    drawTextCentered(tr("NXShare v1.7.5  ---  by musebrot <3",
+                         "NX快传 v1.7.5  ---  作者 musebrot \xE2\x99\xA5  忘忧汉化"), barY + 30, COL_DIM, 2);
 
     present();
 }
