@@ -394,34 +394,39 @@ const MediaFile* Gallery::findByFilename(const std::string& filename) const {
 
 std::string Gallery::jsonEscape(const std::string& s) {
     std::string out;
-    for (char c : s) {
-        switch(c) {
+    static const char HEX[] = "0123456789ABCDEF";
+
+    for (unsigned char c : s) {
+        switch (c) {
             case '"':
                 out += "\\\"";
                 break;
             case '\\':
                 out += "\\\\";
                 break;
-            // valid(?) UTF-8 characters that make the JSON parser break
-            case '\x01': // ZWSP
-            case '\x04': // ZWSP
-            case '\x0B': // ZWSP
-            case '\x0E': // SO ?
-            case '\x0F': // SI ?
-            case '\x10': // ZWSP
-            case '\x11': // ZWSP
-            case '\x12': // ZWSP
-            case '\x14': // ZWSP
-            case '\x15': // NAK ?
-            case '\x16': // ZWSP
-            case '\x18': // ZWSP
-            case '\x1C': // ZWSP
-            case '\x1E': // ZWSP
-                // omit, or replace with underscore
-                //out += "_";
+            case '\b':
+                out += "\\b";
+                break;
+            case '\f':
+                out += "\\f";
+                break;
+            case '\n':
+                out += "\\n";
+                break;
+            case '\r':
+                out += "\\r";
+                break;
+            case '\t':
+                out += "\\t";
                 break;
             default:
-                out += c;
+                if (c < 0x20) {
+                    out += "\\u00";
+                    out += HEX[c >> 4];
+                    out += HEX[c & 0x0F];
+                } else {
+                    out += (char)c;
+                }
                 break;
         }
     }
