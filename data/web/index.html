@@ -42,6 +42,7 @@ header {
 
 .filter-divider { width: 1px; height: 20px; background: var(--border); margin: 0 4px; flex-shrink: 0; }
 #game-filters { display: flex; gap: 7px; flex-wrap: wrap; }
+#date-filters { display: flex; flex-direction: column; gap: 7px; width: 100%; }
 .header-row1 {
   display: flex;
   align-items: center;
@@ -60,7 +61,8 @@ header {
   gap: 7px;
 }
 .header-spacer { flex: 1; }
-.header-games {
+.header-games,
+.header-dates {
   display: flex;
   align-items: center;
   padding: 0 24px 8px;
@@ -90,6 +92,28 @@ header {
 .filter-btn.active[data-filter="videos"] { background: var(--accent); border-color: var(--accent); color: white; }
 .filter-btn.game { background: rgba(56,217,169,0.06); }
 .filter-btn.game.active { background: #38d9a9; border-color: #38d9a9; color: #111; }
+.filter-btn.date { background: rgba(56,217,169,0.06); }
+.filter-btn.date.active { background: #38d9a9; border-color: #38d9a9; color: #111; }
+.date-all-row,
+.date-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.date-year {
+  width: 66px;
+  padding-left: 0;
+  padding-right: 0;
+  flex-shrink: 0;
+}
+.date-months { display: flex; gap: 7px; flex-wrap: wrap; }
+.date-month {
+  width: 39px;
+  padding-left: 0;
+  padding-right: 0;
+  text-align: center;
+}
 .select-all-btn {
   padding: 7px 18px;
   border-radius: 20px;
@@ -337,8 +361,23 @@ footer.hidden { display: none; }
     flex-wrap: wrap;
     gap: 5px;
   }
-  .header-games {
+  .header-games,
+  .header-dates {
     padding: 0 12px 8px;
+  }
+  #date-filters { gap: 5px; }
+  .date-all-row,
+  .date-filter-row,
+  .date-months { gap: 5px; }
+  .filter-btn.date-year {
+    width: 58px;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .filter-btn.date-month {
+    width: 34px;
+    padding-left: 0;
+    padding-right: 0;
   }
   .grid {
     grid-template-columns: repeat(2, 1fr);
@@ -388,6 +427,7 @@ footer.hidden { display: none; }
       <button class="filter-btn" data-filter="screenshots">Screenshots</button>
       <button class="filter-btn" data-filter="videos">Videos</button>
       <button class="filter-btn game" id="game-toggle-btn" onclick="toggleGameFilters()">Games ▾</button>
+      <button class="filter-btn date" id="date-toggle-btn" onclick="toggleDateFilters()">Date ▾</button>
     </div>
     <div class="header-spacer"></div>
     <div class="header-actions">
@@ -403,6 +443,9 @@ footer.hidden { display: none; }
   <div class="header-games">
     <div class="filter-divider" style="display:none"></div>
     <div id="game-filters" style="display:none"></div>
+  </div>
+  <div class="header-dates" style="display:none">
+    <div id="date-filters"></div>
   </div>
 </header>
 
@@ -439,6 +482,7 @@ footer.hidden { display: none; }
 <script>
 const BASE = '';
 let allFiles = [], filteredFiles = [], currentFilter = '', currentGame = '';
+let currentYear = 0, currentMonth = 0;
 let selected = new Set(), offset = 0;
 const LIMIT = 60;
 let total = 0, loading = false, currentLightboxFile = null;
@@ -454,11 +498,33 @@ function toggleGameFilters() {
   const container = document.getElementById('game-filters');
   const btn = document.getElementById('game-toggle-btn');
   const visible = container.style.display !== 'none';
+  closeDateFilters();
   container.style.display = visible ? 'none' : 'flex';
   btn.textContent = visible ? 'Games ▾' : 'Games ▴';
-  // Show/hide the entire games row
   const gamesRow = container.closest('.header-games');
   if (gamesRow) gamesRow.style.display = visible ? 'none' : 'flex';
+}
+
+function closeGameFilters() {
+  const container = document.getElementById('game-filters');
+  const row = container.closest('.header-games');
+  container.style.display = 'none';
+  if (row) row.style.display = 'none';
+  document.getElementById('game-toggle-btn').textContent = 'Games ▾';
+}
+
+function toggleDateFilters() {
+  const row = document.querySelector('.header-dates');
+  const visible = row.style.display !== 'none';
+  closeGameFilters();
+  row.style.display = visible ? 'none' : 'flex';
+  document.getElementById('date-toggle-btn').textContent = visible ? 'Date ▾' : 'Date ▴';
+}
+
+function closeDateFilters() {
+  const row = document.querySelector('.header-dates');
+  row.style.display = 'none';
+  document.getElementById('date-toggle-btn').textContent = 'Date ▾';
 }
 
 function updateGameButtonStyles() {
@@ -469,6 +535,7 @@ function updateGameButtonStyles() {
     btn.style.borderColor = active ? '#38d9a9' : '';
     btn.style.color = active ? '#111' : '';
   });
+  document.getElementById('game-toggle-btn').classList.toggle('active', currentGame !== '');
 }
 
 function populateGameFilters(games) {
@@ -504,6 +571,79 @@ function populateGameFilters(games) {
   updateGameButtonStyles();
 }
 
+function updateDateButtonStyles() {
+  document.getElementById('date-toggle-btn').classList.toggle('active', currentYear > 0);
+  document.querySelectorAll('.filter-btn.date[data-year]').forEach(btn => {
+    const year = parseInt(btn.dataset.year);
+    const month = parseInt(btn.dataset.month || '0');
+    const active = month > 0
+      ? year === currentYear && month === currentMonth
+      : year === currentYear;
+    btn.classList.toggle('active', active);
+  });
+  const allBtn = document.getElementById('all-dates-btn');
+  if (allBtn) allBtn.classList.toggle('active', currentYear === 0);
+}
+
+function populateDateFilters(dates) {
+  const container = document.getElementById('date-filters');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const allRow = document.createElement('div');
+  allRow.className = 'date-all-row';
+  const allBtn = document.createElement('button');
+  allBtn.className = 'filter-btn date';
+  allBtn.id = 'all-dates-btn';
+  allBtn.textContent = 'All Dates';
+  allBtn.addEventListener('click', () => {
+    currentYear = 0;
+    currentMonth = 0;
+    updateDateButtonStyles();
+    clearSelection(); loadFiles(true);
+  });
+  allRow.appendChild(allBtn);
+  container.appendChild(allRow);
+
+  dates.forEach(entry => {
+    const row = document.createElement('div');
+    row.className = 'date-filter-row';
+
+    const yearBtn = document.createElement('button');
+    yearBtn.className = 'filter-btn date date-year';
+    yearBtn.dataset.year = entry.year;
+    yearBtn.dataset.month = '0';
+    yearBtn.textContent = entry.year;
+    yearBtn.addEventListener('click', () => {
+      currentYear = entry.year;
+      currentMonth = 0;
+      updateDateButtonStyles();
+      clearSelection(); loadFiles(true);
+    });
+    row.appendChild(yearBtn);
+
+    const months = document.createElement('div');
+    months.className = 'date-months';
+    (entry.months || []).forEach(month => {
+      const monthBtn = document.createElement('button');
+      monthBtn.className = 'filter-btn date date-month';
+      monthBtn.dataset.year = entry.year;
+      monthBtn.dataset.month = month;
+      monthBtn.textContent = String(month).padStart(2, '0');
+      monthBtn.addEventListener('click', () => {
+        currentYear = entry.year;
+        currentMonth = month;
+        updateDateButtonStyles();
+        clearSelection(); loadFiles(true);
+      });
+      months.appendChild(monthBtn);
+    });
+    row.appendChild(months);
+    container.appendChild(row);
+  });
+  updateDateButtonStyles();
+}
+
 async function init() { await loadFiles(true); setupEvents(); }
 
 async function loadFiles(reset = false) {
@@ -514,12 +654,17 @@ async function loadFiles(reset = false) {
     const params = new URLSearchParams({offset, limit: LIMIT});
     if (currentFilter) params.set('filter', currentFilter);
     if (currentGame) params.set('game', currentGame);
+    if (currentYear) params.set('year', currentYear);
+    if (currentMonth) params.set('month', currentMonth);
     const res = await fetch(`${BASE}/api/list?${params}`);
     const data = await res.json();
     total = data.total;
     document.getElementById('stat-screenshots').textContent = data.screenshots;
     document.getElementById('stat-videos').textContent = data.videos;
-    if (reset) populateGameFilters(data.games || []);
+    if (reset) {
+      populateGameFilters(data.games || []);
+      populateDateFilters(data.dates || []);
+    }
     allFiles = reset ? data.files : [...allFiles, ...data.files];
     filteredFiles = allFiles;
     offset += data.files.length;
@@ -661,8 +806,8 @@ function clearSelection() {
 }
 
 function setupEvents() {
-  document.querySelectorAll('.filter-btn:not(.game)').forEach(btn => btn.addEventListener('click', () => {
-    document.querySelectorAll('.filter-btn:not(.game)').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn[data-filter]').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     currentFilter = btn.dataset.filter;
     clearSelection(); loadFiles(true);

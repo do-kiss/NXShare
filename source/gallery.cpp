@@ -433,12 +433,17 @@ std::string Gallery::jsonEscape(const std::string& s) {
     return out;
 }
 
-std::string Gallery::toJSON(int offset, int limit, const std::string& filter, const std::string& game) const {
+std::string Gallery::toJSON(int offset, int limit, const std::string& filter,
+                            const std::string& game, int year, int month) const {
     std::vector<const MediaFile*> filtered;
     for (const auto& f : m_files) {
         if (filter == "screenshots" && f.type != MEDIA_SCREENSHOT) continue;
         if (filter == "videos"      && f.type != MEDIA_VIDEO)      continue;
         if (!game.empty() && f.gameId != game && f.gameName != game) continue;
+        if (year > 0) {
+            if (f.date.size() < 7 || atoi(f.date.substr(0, 4).c_str()) != year) continue;
+            if (month > 0 && atoi(f.date.substr(5, 2).c_str()) != month) continue;
+        }
         filtered.push_back(&f);
     }
 
@@ -458,6 +463,32 @@ std::string Gallery::toJSON(int offset, int limit, const std::string& filter, co
     for (int i = 0; i < (int)gnames.size(); i++) {
         if (i) json << ",";
         json << "\"" << jsonEscape(gnames[i]) << "\"";
+    }
+    json << "],";
+
+    // Available dates from the complete album, independent of active filters.
+    std::map<int, std::set<int>, std::greater<int>> dates;
+    for (const auto& f : m_files) {
+        if (f.date.size() < 10 || f.date[4] != '-' || f.date[7] != '-') continue;
+        int fileYear = atoi(f.date.substr(0, 4).c_str());
+        int fileMonth = atoi(f.date.substr(5, 2).c_str());
+        if (fileYear > 0 && fileMonth >= 1 && fileMonth <= 12)
+            dates[fileYear].insert(fileMonth);
+    }
+
+    json << "\"dates\":[";
+    bool firstYear = true;
+    for (const auto& entry : dates) {
+        if (!firstYear) json << ",";
+        firstYear = false;
+        json << "{\"year\":" << entry.first << ",\"months\":[";
+        bool firstMonth = true;
+        for (int availableMonth : entry.second) {
+            if (!firstMonth) json << ",";
+            firstMonth = false;
+            json << availableMonth;
+        }
+        json << "]}";
     }
     json << "],";
 
