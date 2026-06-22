@@ -326,9 +326,10 @@ footer.hidden { display: none; }
   .header-filters {
     order: 10;
     width: 100%;
-    flex-wrap: nowrap;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 5px;
-    overflow-x: auto;
+    overflow: visible;
   }
   .select-all-btn {
     padding: 5px 10px;
@@ -355,6 +356,20 @@ footer.hidden { display: none; }
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+  .header-filters .filter-btn {
+    width: 100%;
+    min-width: 0;
+  }
+  .header-filters .filter-btn[data-filter=""] { grid-column: span 1; }
+  .header-filters .filter-btn[data-filter="screenshots"] { grid-column: span 3; }
+  .header-filters .filter-btn[data-filter="videos"] { grid-column: span 2; }
+  #game-toggle-btn,
+  #date-toggle-btn {
+    grid-column: span 3;
+    max-width: none;
+    padding: 5px 8px;
+    font-size: 12px;
   }
   #game-filters {
     width: 100%;
