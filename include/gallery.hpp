@@ -31,7 +31,8 @@ public:
     int getVideoCount() const;
     const std::vector<MediaFile>& getFiles() const;
     const MediaFile* findByFilename(const std::string& filename) const;
-    std::string toJSON(int offset = 0, int limit = 50, const std::string& filter = "", const std::string& game = "") const;
+    std::string toJSON(int offset = 0, int limit = 50, const std::string& filter = "",
+                       const std::string& game = "", int year = 0, int month = 0) const;
     std::vector<std::string> getGameNames() const;
 
     // Get JPEG thumbnail via capsa API (works for both screenshots and videos)

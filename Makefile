@@ -5,7 +5,7 @@
 
 APP_TITLE   := NX快传
 APP_AUTHOR  := musebrot
-APP_VERSION := 1.7.5
+APP_VERSION := 1.8.1
 
 TARGET      := NXShare
 BUILD       := build

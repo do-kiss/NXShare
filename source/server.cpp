@@ -232,17 +232,21 @@ void Server::handleIndex(int sock) {
 }
 
 void Server::handleAPI(int sock, const ClientRequest& req) {
-    // /api/list?offset=0&limit=50&filter=screenshots|videos|""
+    // /api/list?offset=0&limit=50&filter=screenshots|videos|""&game=...&year=...&month=...
     if (req.path == "/api/list") {
-        int offset = 0, limit = 50;
+        int offset = 0, limit = 50, year = 0, month = 0;
         std::string filter = getQueryParam(req.query, "filter");
         std::string game   = getQueryParam(req.query, "game");
         std::string offsetStr = getQueryParam(req.query, "offset");
         std::string limitStr  = getQueryParam(req.query, "limit");
+        std::string yearStr   = getQueryParam(req.query, "year");
+        std::string monthStr  = getQueryParam(req.query, "month");
         if (!offsetStr.empty()) offset = atoi(offsetStr.c_str());
         if (!limitStr.empty())  limit  = atoi(limitStr.c_str());
+        if (!yearStr.empty())   year   = atoi(yearStr.c_str());
+        if (!monthStr.empty())  month  = atoi(monthStr.c_str());
         
-        std::string json = m_gallery->toJSON(offset, limit, filter, game);
+        std::string json = m_gallery->toJSON(offset, limit, filter, game, year, month);
         sendResponse(sock, 200, "application/json; charset=utf-8", json);
         return;
     }

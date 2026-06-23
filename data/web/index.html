@@ -48,6 +48,7 @@ header {
 
 .filter-divider { width: 1px; height: 20px; background: var(--border); margin: 0 4px; flex-shrink: 0; }
 #game-filters { display: flex; gap: 7px; flex-wrap: wrap; }
+#date-filters { display: flex; flex-direction: column; gap: 7px; width: 100%; }
 .header-row1 {
   display: flex;
   align-items: center;
@@ -66,7 +67,8 @@ header {
   gap: 7px;
 }
 .header-spacer { flex: 1; }
-.header-games {
+.header-games,
+.header-dates {
   display: flex;
   align-items: center;
   padding: 0 24px 8px;
@@ -96,6 +98,28 @@ header {
 .filter-btn.active[data-filter="videos"] { background: var(--accent); border-color: var(--accent); color: white; }
 .filter-btn.game { background: rgba(56,217,169,0.06); }
 .filter-btn.game.active { background: #38d9a9; border-color: #38d9a9; color: #111; }
+.filter-btn.date { background: rgba(56,217,169,0.06); }
+.filter-btn.date.active { background: #38d9a9; border-color: #38d9a9; color: #111; }
+.date-all-row,
+.date-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.date-year {
+  width: 66px;
+  padding-left: 0;
+  padding-right: 0;
+  flex-shrink: 0;
+}
+.date-months { display: flex; gap: 7px; flex-wrap: wrap; }
+.date-month {
+  width: 39px;
+  padding-left: 0;
+  padding-right: 0;
+  text-align: center;
+}
 .select-all-btn {
   padding: 7px 18px;
   border-radius: 20px;
@@ -142,6 +166,7 @@ header {
 .card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.3); border-color: var(--border); }
 .card.selected { border-color: white; }
 .card.selected.video-card { border-color: #00a8e0; }
+.card.video-card { background: #1b2433; }
 
 .card-thumb { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; background: var(--surface2); }
 .card-thumb-placeholder { width: 100%; aspect-ratio: 16/9; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 30px; }
@@ -153,13 +178,14 @@ header {
 .card-size { font-size: 11px; color: var(--muted); }
 
 .type-badge {
-  position: absolute; top: 7px; left: 7px;
-  padding: 2px 7px;
-  border-radius: var(--rs);
+  position: absolute; top: -2px; left: -2px;
+  padding: 2px 6px;
+  border-radius: 0 0 var(--rs) 0;
   font-size: 10px; font-weight: 600; letter-spacing: 0.4px; text-transform: uppercase;
   background: rgba(8,8,14,0.72); color: white;
   border: 1px solid rgba(255,255,255,0.15);
-  backdrop-filter: blur(4px);
+  border-top: none;
+  border-left: none;
 }
 .type-badge.png { background: rgba(56,217,169,0.85); }
 .type-badge.video { background: rgba(0,168,224,0.85); color: white; border-color: rgba(0,168,224,0.85); }
@@ -168,15 +194,11 @@ header {
   position: absolute; top: 7px; right: 7px;
   width: 21px; height: 21px;
   border-radius: 50%;
-  border: 2px solid rgba(255,255,255,0.35);
-  background: rgba(0,0,0,0.3);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 11px; color: transparent;
-  transition: all 0.14s;
-  backdrop-filter: blur(4px);
+  display: none; align-items: center; justify-content: center;
+  font-size: 11px;
 }
-.card.selected .check-overlay { background: white; border-color: white; color: #222; }
-.card.selected.video-card .check-overlay { background: #00a8e0; border-color: #00a8e0; color: white; }
+.card.selected .check-overlay { display: flex; background: white; color: #222; }
+.card.selected.video-card .check-overlay { background: #00a8e0; color: white; }
 
 .download-bar {
   display: none; position: fixed;
@@ -308,9 +330,10 @@ footer.hidden { display: none; }
   .header-filters {
     order: 10;
     width: 100%;
-    flex-wrap: nowrap;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 5px;
-    overflow-x: auto;
+    overflow: visible;
   }
   .select-all-btn {
     padding: 5px 10px;
@@ -338,13 +361,42 @@ footer.hidden { display: none; }
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  .header-filters .filter-btn {
+    width: 100%;
+    min-width: 0;
+  }
+  .header-filters .filter-btn[data-filter=""] { grid-column: span 1; }
+  .header-filters .filter-btn[data-filter="screenshots"] { grid-column: span 3; }
+  .header-filters .filter-btn[data-filter="videos"] { grid-column: span 2; }
+  #game-toggle-btn,
+  #date-toggle-btn {
+    grid-column: span 3;
+    max-width: none;
+    padding: 5px 8px;
+    font-size: 12px;
+  }
   #game-filters {
     width: 100%;
     flex-wrap: wrap;
     gap: 5px;
   }
-  .header-games {
+  .header-games,
+  .header-dates {
     padding: 0 12px 8px;
+  }
+  #date-filters { gap: 5px; }
+  .date-all-row,
+  .date-filter-row,
+  .date-months { gap: 5px; }
+  .filter-btn.date-year {
+    width: 58px;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .filter-btn.date-month {
+    width: 34px;
+    padding-left: 0;
+    padding-right: 0;
   }
   .grid {
     grid-template-columns: repeat(2, 1fr);
@@ -394,6 +446,7 @@ footer.hidden { display: none; }
       <button class="filter-btn" data-filter="screenshots" id="filter-screenshots">Screenshots</button>
       <button class="filter-btn" data-filter="videos" id="filter-videos">Videos</button>
       <button class="filter-btn game" id="game-toggle-btn" onclick="toggleGameFilters()">Games ▾</button>
+      <button class="filter-btn date" id="date-toggle-btn" onclick="toggleDateFilters()">Date ▾</button>
     </div>
     <div class="header-spacer"></div>
     <div class="header-actions">
@@ -409,6 +462,9 @@ footer.hidden { display: none; }
   <div class="header-games">
     <div class="filter-divider" style="display:none"></div>
     <div id="game-filters" style="display:none"></div>
+  </div>
+  <div class="header-dates" style="display:none">
+    <div id="date-filters"></div>
   </div>
 </header>
 
@@ -439,12 +495,13 @@ footer.hidden { display: none; }
 
 <footer id="footer">
   <img class="footer-icon" src="data:image/jpeg;base64,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" alt="">
-  <span class="footer-text"><b id="footer-name">NXShare</b> v1.7.5 &nbsp;—&nbsp; <span id="footer-author">made by musebrot ♥</span></span>
+  <span class="footer-text"><b id="footer-name">NXShare</b> v1.8.1 &nbsp;—&nbsp; <span id="footer-author">made by musebrot ♥</span></span>
 </footer>
 
 <script>
 const BASE = '';
 let allFiles = [], filteredFiles = [], currentFilter = '', currentGame = '';
+let currentYear = 0, currentMonth = 0;
 let selected = new Set(), offset = 0;
 const LIMIT = 60;
 let total = 0, loading = false, currentLightboxFile = null;
@@ -464,11 +521,33 @@ function toggleGameFilters() {
   const container = document.getElementById('game-filters');
   const btn = document.getElementById('game-toggle-btn');
   const visible = container.style.display !== 'none';
+  closeDateFilters();
   container.style.display = visible ? 'none' : 'flex';
   btn.textContent = visible ? _( 'Games ▾', '游戏 ▾') : _( 'Games ▴', '游戏 ▴');
-  // Show/hide the entire games row
   const gamesRow = container.closest('.header-games');
   if (gamesRow) gamesRow.style.display = visible ? 'none' : 'flex';
+}
+
+function closeGameFilters() {
+  const container = document.getElementById('game-filters');
+  const row = container.closest('.header-games');
+  container.style.display = 'none';
+  if (row) row.style.display = 'none';
+  document.getElementById('game-toggle-btn').textContent = 'Games ▾';
+}
+
+function toggleDateFilters() {
+  const row = document.querySelector('.header-dates');
+  const visible = row.style.display !== 'none';
+  closeGameFilters();
+  row.style.display = visible ? 'none' : 'flex';
+  document.getElementById('date-toggle-btn').textContent = visible ? _('Date ▾', '日期 ▾') : _('Date ▴', '日期 ▴');
+}
+
+function closeDateFilters() {
+  const row = document.querySelector('.header-dates');
+  row.style.display = 'none';
+  document.getElementById('date-toggle-btn').textContent = _('Date ▾', '日期 ▾');
 }
 
 function updateGameButtonStyles() {
@@ -479,6 +558,7 @@ function updateGameButtonStyles() {
     btn.style.borderColor = active ? '#38d9a9' : '';
     btn.style.color = active ? '#111' : '';
   });
+  document.getElementById('game-toggle-btn').classList.toggle('active', currentGame !== '');
 }
 
 function populateGameFilters(games) {
@@ -514,6 +594,79 @@ function populateGameFilters(games) {
   updateGameButtonStyles();
 }
 
+function updateDateButtonStyles() {
+  document.getElementById('date-toggle-btn').classList.toggle('active', currentYear > 0);
+  document.querySelectorAll('.filter-btn.date[data-year]').forEach(btn => {
+    const year = parseInt(btn.dataset.year);
+    const month = parseInt(btn.dataset.month || '0');
+    const active = month > 0
+      ? year === currentYear && month === currentMonth
+      : year === currentYear;
+    btn.classList.toggle('active', active);
+  });
+  const allBtn = document.getElementById('all-dates-btn');
+  if (allBtn) allBtn.classList.toggle('active', currentYear === 0);
+}
+
+function populateDateFilters(dates) {
+  const container = document.getElementById('date-filters');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const allRow = document.createElement('div');
+  allRow.className = 'date-all-row';
+  const allBtn = document.createElement('button');
+  allBtn.className = 'filter-btn date';
+  allBtn.id = 'all-dates-btn';
+  allBtn.textContent = _('All Dates', '全部日期');
+  allBtn.addEventListener('click', () => {
+    currentYear = 0;
+    currentMonth = 0;
+    updateDateButtonStyles();
+    clearSelection(); loadFiles(true);
+  });
+  allRow.appendChild(allBtn);
+  container.appendChild(allRow);
+
+  dates.forEach(entry => {
+    const row = document.createElement('div');
+    row.className = 'date-filter-row';
+
+    const yearBtn = document.createElement('button');
+    yearBtn.className = 'filter-btn date date-year';
+    yearBtn.dataset.year = entry.year;
+    yearBtn.dataset.month = '0';
+    yearBtn.textContent = entry.year;
+    yearBtn.addEventListener('click', () => {
+      currentYear = entry.year;
+      currentMonth = 0;
+      updateDateButtonStyles();
+      clearSelection(); loadFiles(true);
+    });
+    row.appendChild(yearBtn);
+
+    const months = document.createElement('div');
+    months.className = 'date-months';
+    (entry.months || []).forEach(month => {
+      const monthBtn = document.createElement('button');
+      monthBtn.className = 'filter-btn date date-month';
+      monthBtn.dataset.year = entry.year;
+      monthBtn.dataset.month = month;
+      monthBtn.textContent = String(month).padStart(2, '0');
+      monthBtn.addEventListener('click', () => {
+        currentYear = entry.year;
+        currentMonth = month;
+        updateDateButtonStyles();
+        clearSelection(); loadFiles(true);
+      });
+      months.appendChild(monthBtn);
+    });
+    row.appendChild(months);
+    container.appendChild(row);
+  });
+  updateDateButtonStyles();
+}
+
 async function init() { await loadFiles(true); setupEvents(); }
 
 async function loadFiles(reset = false) {
@@ -524,12 +677,17 @@ async function loadFiles(reset = false) {
     const params = new URLSearchParams({offset, limit: LIMIT});
     if (currentFilter) params.set('filter', currentFilter);
     if (currentGame) params.set('game', currentGame);
+    if (currentYear) params.set('year', currentYear);
+    if (currentMonth) params.set('month', currentMonth);
     const res = await fetch(`${BASE}/api/list?${params}`);
     const data = await res.json();
     total = data.total;
     document.getElementById('stat-screenshots').textContent = data.screenshots;
     document.getElementById('stat-videos').textContent = data.videos;
-    if (reset) populateGameFilters(data.games || []);
+    if (reset) {
+      populateGameFilters(data.games || []);
+      populateDateFilters(data.dates || []);
+    }
     allFiles = reset ? data.files : [...allFiles, ...data.files];
     filteredFiles = allFiles;
     offset += data.files.length;
@@ -671,8 +829,8 @@ function clearSelection() {
 }
 
 function setupEvents() {
-  document.querySelectorAll('.filter-btn:not(.game)').forEach(btn => btn.addEventListener('click', () => {
-    document.querySelectorAll('.filter-btn:not(.game)').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn[data-filter]').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     currentFilter = btn.dataset.filter;
     clearSelection(); loadFiles(true);
@@ -722,6 +880,10 @@ init();
   // Game toggle button
   const gameToggle = document.getElementById('game-toggle-btn');
   if (gameToggle) gameToggle.textContent = _('Games ▾', '游戏 ▾');
+
+  // Date toggle button
+  const dateToggle = document.getElementById('date-toggle-btn');
+  if (dateToggle) dateToggle.textContent = _('Date ▾', '日期 ▾');
 
   // Select all
   const selBtn = document.getElementById('select-all-btn');
